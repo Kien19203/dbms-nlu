@@ -276,24 +276,114 @@ ON l.MaNCC = nh.MaNCC
 WHERE n.TenNGK = 'Coca Cola'
 
 
---5) Cho biết tên các nhà cung cấp có thể cung cấp nhiều loại NGK nhất.
-SELECT DISTINCT nh.TenNCC FROM NGK n JOIN LOAINGK l 
-ON n.MaLoaiNGK = l.MaLoaiNGK 
-JOIN NHACC nh
-ON l.MaNCC = nh.MaNCC 
-GROUP BY 
+--5) !Cho biết tên các nhà cung cấp có thể cung cấp nhiều loại NGK nhất.
+
+
+SELECT n.TenNCC, COUNT(l.MaLoaiNGK) AS [No LoaiNGK] FROM LOAINGK l FULL JOIN NHACC n
+ON l.MaNCC = n.MaNCC
+
+GROUP BY n.TenNCC
 
 
 
 --6) Cho biết tên nhà cung cấp không có khả năng cung cấp NGK có tên ‘Pepsi’.
+SELECT TenNCC FROM NHACC 
+
+WHERE TenNCC <> (
+SELECT DISTINCT n.TenNCC FROM NHACC n FULL JOIN LOAINGK l
+ON n.MaNCC = l.MaNCC
+FULL JOIN NGK ngk
+ON l.MaLoaiNGK = ngk.MaLoaiNGK
+
+WHERE ngk.TenNGK = N'Pepsi'
+
+)
+
+
 --7) Hiển thị thông tin của NGK chưa bán được.
---8) Hiển thị tên và tổng số lượng bán của từng NGK.
---9) Hiển thị tên và tổng số lượng của NGK nhập về.
---10) Hiển thị ĐĐH đã đặt NGK với số lượng nhiều nhất so với các ĐĐH khác có đặt NGK đó. Thông tin
+--SoDDH không có -> chưa bán được
+ SELECT * FROM NGK 
+ WHERE MaNGK IN 
+ 
+ (SELECT ngk.MaNGK FROM NGK ngk FULL JOIN CT_DDH ct
+ ON ngk.MaNGK = ct.MaNGK
+
+ WHERE ct.SoDDH IS NULL
+ )
+
+
+
+
+
+--8) ! Hiển thị tên và tổng số lượng bán của từng NGK.
+
+SELECT * FROM NGK ngk FULL JOIN CT_HOADON ct
+ON ngk.MaNGK = ct.MaNGK
+
+
+
+
+
+--9)(same 8) ! Hiển thị tên và tổng số lượng của NGK nhập về.
+
+
+
+
+--10)! Hiển thị ĐĐH đã đặt NGK với số lượng nhiều nhất so với các ĐĐH khác có đặt NGK đó. Thông tin
 --hiển thị: SoDDH, MaNGK, [SL đặt nhiều nhất].
---11) Hiển thị các NGK không được nhập trong tháng 1/2010.
+
+
+
+SELECT dh.SoDDH, SUM(ct.SLDat)  FROM DDH dh FULL JOIN CT_DDH ct 
+ON dh.SoDDH = ct.SoDDH
+GROUP BY dh.SoDDH
+
+
+SELECT MaNGK , SUM(SLDat) FROM CT_DDH
+GROUP BY MaNGK
+ORDER BY SUM(SLDat) desc
+
+
+--11) Hiển thị các NGK không được nhập trong tháng 5/2010 (Vì nếu để tháng 1 như đề ban đầu thì lọc đc toàn bộ NGK).
+-- không nhập -> Phiếu giao hàng.
+
+
+SELECT distinct n.* FROM PHIEUGH p RIGHT OUTER  JOIN CT_PGH ct 
+ON p.SoPGH = ct.SoPGH 
+FULL JOIN NGK n
+ON ct.MaNGK = n.MaNGK
+WHERE (p.NgayGH NOT BETWEEN '20100501' AND '20100531') OR (p.NgayGH IS NULL)
+
+
+
+
+
+
 --12) Hiển thị tên các NGK không bán được trong tháng 6/2010.
+SELECT distinct TenNGK FROM NGK 
+WHERE TenNGK NOT IN (
+
+SELECT distinct ngk.TenNGK FROM HOADON h FULL JOIN CT_HOADON ct
+ON h.SoHD = ct.SoHD
+FULL JOIN NGK ngk
+ON ct.MaNGK = ngk.MaNGK
+WHERE (h.NgaylapHD BETWEEN '20100601' AND '20100630') 
+)
+
 --13) Cho biết cửa hàng bán bao nhiêu thứ NGK.
+-- Thứ NGK - chắc là loại ngk 
+
+SELECT distinct l.TenLoaiNGK
+FROM DDH d JOIN CT_DDH ct 
+ON d.SoDDH = ct.SoDDH 
+JOIN NGK n
+ON ct.MaNGK = n.MaNGK 
+JOIN LOAINGK l
+ON n.MaLoaiNGK = l.MaLoaiNGK
+
+
+
+
 --14) Cho biết cửa hàng bán bao nhiêu loại NGK.
 --15) Hiển thị thông tin của khách hàng có giao dịch với cửa hàng nhiều nhất (căn cứ vào số lần mua
 --hàng).
